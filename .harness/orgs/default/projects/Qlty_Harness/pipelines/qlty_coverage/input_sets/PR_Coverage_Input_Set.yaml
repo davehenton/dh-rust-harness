@@ -1,0 +1,14 @@
+inputSet:
+  name: PR Coverage Input Set
+  identifier: pr_coverage_inputset
+  orgIdentifier: default
+  projectIdentifier: Qlty_Harness
+  pipeline:
+    identifier: qlty_coverage
+    properties:
+      ci:
+        codebase:
+          build:
+            type: PR
+            spec:
+              number: <+trigger.prNumber>
