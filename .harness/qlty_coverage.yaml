@@ -39,22 +39,14 @@ pipeline:
                       cargo llvm-cov --all-features --workspace --lcov --output-path target/lcov.info
                       ls -la target/lcov.info
               - step:
-                  type: Run
+                  type: Plugin
                   name: Publish Coverage to Qlty
                   identifier: publish_coverage_to_qlty
                   spec:
-                    image: rust:1.87
-                    shell: Sh
+                    image: ghcr.io/davehenton/qlty-harness:1
                     envVariables:
                       QLTY_COVERAGE_TOKEN: <+secrets.getValue("org.QLTY_COVERAGE_TOKEN")>
-                    command: |-
-                      set -e
-                      # Install the qlty CLI in a Run step.
-                      curl -fsSL https://qlty.sh | sh
-                      export PATH="$HOME/.qlty/bin:$PATH"
-                      qlty --version
-                      # The qlty CLI auto-detects Harness CI, so build-id, commit, and branch
-                      # are read from the environment automatically.
-                      qlty coverage publish \
-                        --format lcov \
-                        target/lcov.info
+                    settings:
+                      files: target/lcov.info
+                      format: lcov
+                      project: dh-rust-harness
