@@ -49,4 +49,3 @@ pipeline:
                     settings:
                       files: target/lcov.info
                       format: lcov
-                      project: dh-rust-harness
