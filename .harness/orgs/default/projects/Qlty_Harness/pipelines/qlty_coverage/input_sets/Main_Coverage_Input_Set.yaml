@@ -1,0 +1,14 @@
+inputSet:
+  name: Main Coverage Input Set
+  identifier: main_coverage_inputset
+  orgIdentifier: default
+  projectIdentifier: Qlty_Harness
+  pipeline:
+    identifier: qlty_coverage
+    properties:
+      ci:
+        codebase:
+          build:
+            type: branch
+            spec:
+              branch: <+trigger.targetBranch>
