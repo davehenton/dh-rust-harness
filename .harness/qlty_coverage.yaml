@@ -1,0 +1,73 @@
+pipeline:
+  name: Qlty Coverage
+  identifier: qlty_coverage
+  projectIdentifier: Qlty_Harness
+  orgIdentifier: default
+  properties:
+    ci:
+      codebase:
+        connectorRef: account.Github_OAuth_1782329379155
+        repoName: davehenton/dh-rust-harness
+        build: <+input>
+  stages:
+    - stage:
+        name: Build Test and Coverage
+        identifier: build_test_coverage
+        type: CI
+        spec:
+          cloneCodebase: true
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Debug Env
+                  identifier: debug_env
+                  spec:
+                    image: alpine:3
+                    shell: Sh
+                    command: |-
+                      printenv | grep -E '^HARNESS_|^DRONE_' | sort
+            
+              - step:
+                  type: Run
+                  name: Build and Test
+                  identifier: build_and_test
+                  spec:
+                    image: rust:1.87
+                    shell: Sh
+                    command: |-
+                      set -e
+                      rustup component add llvm-tools-preview
+                      cargo install cargo-llvm-cov
+                      cargo build --workspace --verbose
+                      cargo llvm-cov --all-features --workspace --lcov --output-path target/lcov.info
+                      ls -la target/lcov.info
+              - step:
+                  type: Run
+                  name: Publish Coverage to Qlty
+                  identifier: publish_coverage_to_qlty
+                  spec:
+                    image: rust:1.87
+                    shell: Sh
+                    envVariables:
+                      QLTY_COVERAGE_TOKEN: <+secrets.getValue("org.QLTY_COVERAGE_TOKEN")>
+                    command: |-
+                      set -e
+                      # No native Harness Qlty plugin — install the CLI in a Run step.
+                      curl -fsSL https://qlty.sh | sh
+                      export PATH="$HOME/.qlty/bin:$PATH"
+                      qlty --version
+                      # The qlty CLI does NOT auto-detect Harness (CI: unknown), so build-id,
+                      # commit, and branch must be passed explicitly or the upload 422s.
+                      qlty coverage publish \
+                        --format lcov \
+                        --override-build-id "<+pipeline.executionId>" \
+                        --override-commit-sha "<+codebase.commitSha>" \
+                        --override-branch "<+codebase.branch>" \
+                        target/lcov.info
