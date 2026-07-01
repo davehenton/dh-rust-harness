@@ -26,16 +26,6 @@ pipeline:
             steps:
               - step:
                   type: Run
-                  name: Debug Env
-                  identifier: debug_env
-                  spec:
-                    image: alpine:3
-                    shell: Sh
-                    command: |-
-                      printenv | grep -E '^HARNESS_|^DRONE_' | sort
-            
-              - step:
-                  type: Run
                   name: Build and Test
                   identifier: build_and_test
                   spec:
@@ -59,15 +49,12 @@ pipeline:
                       QLTY_COVERAGE_TOKEN: <+secrets.getValue("org.QLTY_COVERAGE_TOKEN")>
                     command: |-
                       set -e
-                      # No native Harness Qlty plugin — install the CLI in a Run step.
+                      # Install the qlty CLI in a Run step.
                       curl -fsSL https://qlty.sh | sh
                       export PATH="$HOME/.qlty/bin:$PATH"
                       qlty --version
-                      # The qlty CLI does NOT auto-detect Harness (CI: unknown), so build-id,
-                      # commit, and branch must be passed explicitly or the upload 422s.
+                      # The qlty CLI auto-detects Harness CI, so build-id, commit, and branch
+                      # are read from the environment automatically.
                       qlty coverage publish \
                         --format lcov \
-                        --override-build-id "<+pipeline.executionId>" \
-                        --override-commit-sha "<+codebase.commitSha>" \
-                        --override-branch "<+codebase.branch>" \
                         target/lcov.info
